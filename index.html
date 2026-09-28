@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Central Meteorológica</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      min-height: 100vh;
+      color: white;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 40px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: end;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .field label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .field select {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      background: white;
+      color: #0f172a;
+    }
+
+    .search-box button {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #38bdf8;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    .search-box button:hover {
+      background: #0ea5e9;
+    }
+
+    .search-box button:disabled,
+    .field select:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .location-status {
+      min-height: 20px;
+      margin-bottom: 18px;
+      color: #bae6fd;
+      font-size: 14px;
+    }
+
+    .weather-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card h2 {
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    .main-temp {
+      font-size: 55px;
+      font-weight: bold;
+    }
+
+    .description {
+      text-transform: capitalize;
+      margin-top: 10px;
+      font-size: 18px;
+    }
+
+    .info {
+      margin-top: 12px;
+      line-height: 1.8;
+    }
+
+    .alert-box {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 15px;
+      background: #dc2626;
+      display: none;
+    }
+
+    .alert-box h2 {
+      margin-bottom: 10px;
+    }
+
+    .forecast {
+      margin-top: 30px;
+    }
+
+    .forecast-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .week-container {
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    }
+
+    .forecast-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .week-card {
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .week-icon {
+      font-size: 32px;
+    }
+
+    .week-temperatures {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .attribution {
+      margin-top: 12px;
+      color: #cbd5e1;
+      font-size: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .forecast-carousel-controls {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .search-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box button {
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 32px;
+      }
+
+      .hourly-forecast .forecast-container,
+      .week-forecast .forecast-container {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: 85%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        padding-bottom: 8px;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .hourly-forecast .forecast-card,
+      .week-forecast .forecast-card {
+        scroll-snap-align: start;
+      }
+
+      .forecast-carousel-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin-top: 12px;
+      }
+
+      .forecast-carousel-controls button {
+        border: 1px solid rgba(255, 255, 255, .35);
+        border-radius: 8px;
+        padding: 9px 14px;
+        background: rgba(255, 255, 255, .12);
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+      }
+
+      .forecast-carousel-controls button:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+      }
+
+      .forecast-carousel-position {
+        min-width: 90px;
+        text-align: center;
+        font-size: 14px;
+        color: #e2e8f0;
+      }
+    }
+
+    @media (min-width: 601px) and (max-width: 1024px) {
+
+      .hourly-forecast .forecast-container,
+      .week-forecast .forecast-container {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: calc((100% - 30px) / 3);
+        gap: 15px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        padding-bottom: 8px;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .hourly-forecast .forecast-card,
+      .week-forecast .forecast-card {
+        scroll-snap-align: start;
+      }
+
+      .forecast-carousel-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin-top: 12px;
+      }
+
+      .forecast-carousel-controls button {
+        border: 1px solid rgba(255, 255, 255, .35);
+        border-radius: 8px;
+        padding: 9px 14px;
+        background: rgba(255, 255, 255, .12);
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+      }
+
+      .forecast-carousel-controls button:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+      }
+
+      .forecast-carousel-position {
+        min-width: 110px;
+        text-align: center;
+        font-size: 14px;
+        color: #e2e8f0;
+      }
+    }
+
+    @media (max-width: 600px) and (orientation: portrait) {
+
+      .hourly-forecast .forecast-container,
+      .week-forecast .forecast-container {
+        grid-auto-columns: calc((100% - 12px) / 2);
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>🌦️ Central Meteorológica</h1>
+
+    <div class="search-box">
+      <div class="field">
+        <label for="estado">Estado</label>
+        <select id="estado" aria-label="Selecione o estado" disabled>
+          <option value="">Carregando estados...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cidade">Cidade</label>
+        <select id="cidade" aria-label="Selecione a cidade" disabled>
+          <option value="">Selecione primeiro um estado</option>
+        </select>
+      </div>
+      <button id="buscarBtn" type="button" onclick="buscarClima()" disabled>Buscar</button>
+    </div>
+    <div class="location-status" id="locationStatus" role="status" aria-live="polite"></div>
+
+    <div class="loading" id="loading">Carregando informações do clima...</div>
+
+    <div class="weather-grid">
+      <div class="card">
+        <h2>Clima Atual</h2>
+        <div class="main-temp" id="temperatura">--°C</div>
+        <div class="description" id="descricao">---</div>
+        <div class="info">
+          🌡️ Sensação: <span id="sensacao">--</span><br>
+          💧 Umidade: <span id="umidade">--</span><br>
+          🌬️ Vento atual (km/h): <span id="vento">--</span><br>
+          ☁️ Nuvens: <span id="nuvens">--</span><br>
+          👁️ Visibilidade: <span id="visibilidade">--</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Informações Extras</h2>
+        <div class="info">
+          🌅 Nascer do Sol: <span id="nascer">--</span><br>
+          🌇 Pôr do Sol: <span id="por">--</span><br>
+          📈 Pressão: <span id="pressao">--</span><br>
+          🌧️ Chuva: <span id="chuva">--</span><br>
+          🧭 Coordenadas: <span id="coords">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert-box" id="alerta">
+      <h2>⚠️ ALERTA METEOROLÓGICO</h2>
+      <div id="alertaTexto"></div>
+    </div>
+
+    <div class="forecast hourly-forecast">
+      <h2>📅 Previsão por hora até meia-noite</h2>
+      <div class="forecast-container" id="forecastContainer"></div>
+      <div class="forecast-carousel-controls" role="group" aria-label="Navegação da previsão por hora">
+        <button id="hourlyPrev" type="button" aria-label="Mostrar horário anterior" disabled>← Anterior</button>
+        <span class="forecast-carousel-position" id="hourlyPosition" aria-live="polite">--</span>
+        <button id="hourlyNext" type="button" aria-label="Mostrar próximo horário" disabled>Próximo →</button>
+      </div>
+    </div>
+
+    <div class="forecast week-forecast">
+      <h2>📆 Previsão para os próximos 7 dias</h2>
+      <div class="forecast-container week-container" id="weekForecastContainer" aria-live="polite">
+        <div class="forecast-card">A previsão semanal aparecerá após selecionar a cidade.</div>
+      </div>
+      <div class="forecast-carousel-controls" role="group" aria-label="Navegação da previsão para sete dias">
+        <button id="weekPrev" type="button" aria-label="Mostrar dia anterior" disabled>← Anterior</button>
+        <span class="forecast-carousel-position" id="weekPosition" aria-live="polite">--</span>
+        <button id="weekNext" type="button" aria-label="Mostrar próximo dia" disabled>Próximo →</button>
+      </div>
+      <p class="attribution">Velocidade do vento em km/h. O valor atual e o das próximas horas são instantâneos; na
+        previsão diária, é o máximo previsto para o dia. Dados meteorológicos: <a href="https://open-meteo.com/"
+          target="_blank" rel="noopener noreferrer" style="color:#bae6fd">Open-Meteo.com</a>.</p>
+    </div>
+  </div>
+
+  <script>
+    // OpenWeather é usado apenas para localizar as coordenadas da cidade.
+    // Os dados meteorológicos das três seções vêm da Open-Meteo.
+    const API_KEY = "394bb74f1d56e812f155a6db4c03a20a";
+    const IBGE_API = "https://servicodados.ibge.gov.br/api/v1/localidades";
+
+    const estadoSelect = document.getElementById("estado");
+    const cidadeSelect = document.getElementById("cidade");
+    const buscarBtn = document.getElementById("buscarBtn");
+    const locationStatus = document.getElementById("locationStatus");
+
+    async function carregarEstados() {
+      locationStatus.textContent = "Carregando lista de estados...";
+      try {
+        const resposta = await fetch(`${IBGE_API}/estados?orderBy=nome`);
+        if (!resposta.ok) throw new Error("Não foi possível carregar os estados.");
+        const estados = await resposta.json();
+
+        estadoSelect.innerHTML = '<option value="">Selecione um estado</option>';
+        estados.forEach(estado => {
+          const option = document.createElement("option");
+          option.value = estado.sigla;
+          option.textContent = estado.nome;
+          estadoSelect.appendChild(option);
+        });
+        estadoSelect.disabled = false;
+
+        // Mantém a localidade que já era exibida automaticamente ao abrir.
+        estadoSelect.value = "AL";
+        await carregarCidades("AL", "Porto Calvo");
+      } catch (erro) {
+        estadoSelect.innerHTML = '<option value="">Erro ao carregar estados</option>';
+        locationStatus.textContent = `${erro.message} Verifique sua conexão e recarregue a página.`;
+      }
+    }
+
+    async function carregarCidades(uf, cidadeInicial = "") {
+      cidadeSelect.disabled = true;
+      buscarBtn.disabled = true;
+      cidadeSelect.innerHTML = '<option value="">Carregando cidades...</option>';
+      locationStatus.textContent = "Carregando cidades do estado selecionado...";
+
+      try {
+        const resposta = await fetch(`${IBGE_API}/estados/${encodeURIComponent(uf)}/municipios?orderBy=nome`);
+        if (!resposta.ok) throw new Error("Não foi possível carregar as cidades desse estado.");
+        const cidades = await resposta.json();
+
+        cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
+        cidades.forEach(cidade => {
+          const option = document.createElement("option");
+          option.value = cidade.nome;
+          option.textContent = cidade.nome;
+          cidadeSelect.appendChild(option);
+        });
+        cidadeSelect.disabled = false;
+        buscarBtn.disabled = false;
+        locationStatus.textContent = "";
+
+        if (cidadeInicial && cidades.some(cidade => cidade.nome === cidadeInicial)) {
+          cidadeSelect.value = cidadeInicial;
+          buscarClima();
+        }
+      } catch (erro) {
+        cidadeSelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+        locationStatus.textContent = `${erro.message} Tente selecionar o estado novamente.`;
+      }
+    }
+
+    estadoSelect.addEventListener("change", () => {
+      if (estadoSelect.value) carregarCidades(estadoSelect.value);
+      else {
+        cidadeSelect.innerHTML = '<option value="">Selecione primeiro um estado</option>';
+        cidadeSelect.disabled = true;
+        buscarBtn.disabled = true;
+      }
+    });
+
+    async function buscarClima() {
+      const cidade = cidadeSelect.value;
+      const uf = estadoSelect.value;
+      if (!cidade || !uf) {
+        alert("Selecione um estado e uma cidade.");
+        return;
+      }
+
+      document.getElementById("loading").style.display = "block";
+      buscarBtn.disabled = true;
+      try {
+        // Usa a resposta da OpenWeather só para obter as coordenadas da cidade.
+        const localidade = `${cidade},${uf},BR`;
+        const parametrosLocal = new URLSearchParams({ q: localidade, appid: API_KEY });
+        const respostaLocal = await fetch(`https://api.openweathermap.org/data/2.5/weather?${parametrosLocal}`);
+        const dadosLocal = await respostaLocal.json();
+        if (!respostaLocal.ok) throw new Error(dadosLocal.message || `Erro ${respostaLocal.status}`);
+
+        // Uma única consulta e uma única fonte para clima atual, horas e semana.
+        const parametrosTempo = new URLSearchParams({
+          latitude: String(dadosLocal.coord.lat),
+          longitude: String(dadosLocal.coord.lon),
+          current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,cloud_cover,pressure_msl,wind_speed_10m",
+          hourly: "visibility,temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m",
+          daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset",
+          forecast_days: "7",
+          timezone: "auto",
+          wind_speed_unit: "kmh",
+          precipitation_unit: "mm"
+        });
+        const respostaTempo = await fetch(`https://api.open-meteo.com/v1/forecast?${parametrosTempo}`);
+        const dadosTempo = await respostaTempo.json();
+        if (!respostaTempo.ok) throw new Error(dadosTempo.reason || `Erro ${respostaTempo.status}`);
+
+        preencherDados(dadosTempo);
+        preencherForecast(dadosTempo);
+        preencherPrevisaoSemanal(dadosTempo.daily);
+      } catch (erro) {
+        alert("Erro ao buscar dados: " + erro.message);
+        console.error(erro);
+      } finally {
+        document.getElementById("loading").style.display = "none";
+        buscarBtn.disabled = false;
+      }
+    }
+
+    function indiceHoraAtual(dados) {
+      const horaAtual = dados.current.time.slice(0, 13);
+      const indiceExato = dados.hourly.time.findIndex(hora => hora.slice(0, 13) === horaAtual);
+      if (indiceExato >= 0) return indiceExato;
+      const proximaHora = dados.hourly.time.findIndex(hora => hora >= dados.current.time);
+      return proximaHora >= 0 ? proximaHora : 0;
+    }
+
+    function preencherDados(dados) {
+      const atual = dados.current;
+      const indice = indiceHoraAtual(dados);
+      const [icone, descricao] = descreverTempo(atual.weather_code);
+      document.getElementById("temperatura").textContent = `${Math.round(atual.temperature_2m)}°C`;
+      document.getElementById("descricao").textContent = `${icone} ${descricao}`;
+      document.getElementById("sensacao").textContent = `${Math.round(atual.apparent_temperature)}°C`;
+      document.getElementById("umidade").textContent = `${atual.relative_humidity_2m}%`;
+      document.getElementById("vento").textContent = `${Math.round(atual.wind_speed_10m)} km/h`;
+      document.getElementById("nuvens").textContent = `${atual.cloud_cover}%`;
+      document.getElementById("visibilidade").textContent = `${(dados.hourly.visibility[indice] / 1000).toFixed(1)} km`;
+      document.getElementById("pressao").textContent = `${Math.round(atual.pressure_msl)} hPa`;
+      document.getElementById("coords").textContent = `${dados.latitude}, ${dados.longitude}`;
+      document.getElementById("chuva").textContent = `${Number(atual.rain || 0).toFixed(1)} mm`;
+
+      const nascer = dados.daily.sunrise[0].slice(11, 16);
+      const por = dados.daily.sunset[0].slice(11, 16);
+      document.getElementById("nascer").textContent = nascer;
+      document.getElementById("por").textContent = por;
+      verificarAlertas(atual);
+    }
+
+    function verificarAlertas(atual) {
+      const alertaBox = document.getElementById("alerta");
+      const alertaTexto = document.getElementById("alertaTexto");
+      const alertas = [];
+
+      if (atual.rain > 10) alertas.push("🌧️ Chuva forte detectada.");
+      if (atual.wind_speed_10m > 54) alertas.push("🌬️ Ventos fortes (acima de 54 km/h).");
+      if ([95, 96, 99].includes(atual.weather_code)) alertas.push("⛈️ Possibilidade de tempestade.");
+      if (atual.temperature_2m > 38) alertas.push("🔥 Temperatura muito elevada.");
+      if (atual.temperature_2m < 5) alertas.push("🥶 Temperatura muito baixa.");
+
+      if (alertas.length > 0) {
+        alertaBox.style.display = "block";
+        alertaTexto.innerHTML = alertas.join("<br><br>");
+      } else {
+        alertaBox.style.display = "none";
+      }
+    }
+
+    function preencherForecast(dados) {
+      const container = document.getElementById("forecastContainer");
+      container.innerHTML = "";
+      container.scrollLeft = 0;
+      const primeiraHora = indiceHoraAtual(dados);
+      const dataAtual = dados.current.time.slice(0, 10);
+      const horasRestantesHoje = dados.hourly.time
+        .map((hora, indice) => ({ hora, indice }))
+        .filter(item => item.indice >= primeiraHora && item.hora.slice(0, 10) === dataAtual);
+
+      horasRestantesHoje.forEach(({ hora, indice }, deslocamento) => {
+        const data = new Date(`${hora.slice(0, 10)}T12:00:00`);
+        const dia = deslocamento === 0 ? "Agora" : data.toLocaleDateString("pt-BR", { weekday: "short" });
+        const [icone, descricao] = descreverTempo(dados.hourly.weather_code[indice]);
+        const card = document.createElement("div");
+        card.classList.add("forecast-card");
+        card.innerHTML = `
+          <h3>${dia} ${hora.slice(11, 16)}</h3>
+          <p style="font-size:30px;">${icone} ${Math.round(dados.hourly.temperature_2m[indice])}°C</p>
+          <p>${descricao}</p>
+          <p>💧 Umidade: ${dados.hourly.relative_humidity_2m[indice]}%</p>
+          <p>🌧️ Chuva: ${dados.hourly.precipitation_probability[indice] ?? "--"}%</p>
+          <p>💨 Vento: ${Math.round(dados.hourly.wind_speed_10m[indice])} km/h</p>
+        `;
+        container.appendChild(card);
+      });
+      configurarCarrossel(container, "hourlyPrev", "hourlyNext", "hourlyPosition", "horários");
+    }
+
+    function configurarCarrossel(container, idAnterior, idProximo, idPosicao, unidade) {
+      const anterior = document.getElementById(idAnterior);
+      const proximo = document.getElementById(idProximo);
+      const posicao = document.getElementById(idPosicao);
+      let indiceVisivel = 0;
+
+      function atualizarPosicao() {
+        const cards = Array.from(container.children);
+        if (cards.length === 0) {
+          posicao.textContent = `0 ${unidade}`;
+          anterior.disabled = true;
+          proximo.disabled = true;
+          return;
+        }
+
+        const retangulo = container.getBoundingClientRect();
+        const bordaContainer = retangulo.left;
+        let menorDistancia = Infinity;
+        let indiceMaisProximo = 0;
+        cards.forEach((card, indice) => {
+          const distancia = Math.abs(card.getBoundingClientRect().left - bordaContainer);
+          if (distancia < menorDistancia) {
+            menorDistancia = distancia;
+            indiceMaisProximo = indice;
+          }
+        });
+
+        const limiteDireito = retangulo.left + container.clientWidth;
+        const totalmenteVisiveis = cards
+          .map((card, indice) => ({ card, indice, retangulo: card.getBoundingClientRect() }))
+          .filter(item => item.retangulo.left >= bordaContainer - 1 && item.retangulo.right <= limiteDireito + 1)
+          .map(item => item.indice);
+        indiceVisivel = totalmenteVisiveis.length ? totalmenteVisiveis[0] : indiceMaisProximo;
+        const ultimoVisivel = totalmenteVisiveis.length ? totalmenteVisiveis[totalmenteVisiveis.length - 1] : indiceVisivel;
+        const faixa = indiceVisivel === ultimoVisivel
+          ? `${indiceVisivel + 1}`
+          : `${indiceVisivel + 1}–${ultimoVisivel + 1}`;
+        posicao.textContent = `${faixa} de ${cards.length} ${unidade}`;
+        anterior.disabled = indiceVisivel === 0;
+        proximo.disabled = ultimoVisivel === cards.length - 1;
+      }
+
+      function irPara(indice) {
+        const cards = Array.from(container.children);
+        const alvo = Math.max(0, Math.min(indice, cards.length - 1));
+        if (cards[alvo]) cards[alvo].scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+      }
+
+      container.onscroll = atualizarPosicao;
+      anterior.onclick = () => irPara(indiceVisivel - 1);
+      proximo.onclick = () => irPara(indiceVisivel + 1);
+      atualizarPosicao();
+    }
+
+    function descreverTempo(codigo) {
+      const descricoes = {
+        0: ["☀️", "Céu limpo"],
+        1: ["🌤️", "Predominantemente limpo"],
+        2: ["⛅", "Parcialmente nublado"],
+        3: ["☁️", "Nublado"],
+        45: ["🌫️", "Neblina"],
+        48: ["🌫️", "Neblina com geada"],
+        51: ["🌦️", "Garoa fraca"],
+        53: ["🌦️", "Garoa moderada"],
+        55: ["🌧️", "Garoa intensa"],
+        56: ["🌧️", "Garoa congelante fraca"],
+        57: ["🌧️", "Garoa congelante intensa"],
+        61: ["🌦️", "Chuva fraca"],
+        63: ["🌧️", "Chuva moderada"],
+        65: ["🌧️", "Chuva forte"],
+        66: ["🌧️", "Chuva congelante fraca"],
+        67: ["🌧️", "Chuva congelante forte"],
+        71: ["🌨️", "Neve fraca"],
+        73: ["❄️", "Neve moderada"],
+        75: ["❄️", "Neve forte"],
+        77: ["🌨️", "Grãos de neve"],
+        80: ["🌦️", "Pancadas fracas"],
+        81: ["🌧️", "Pancadas moderadas"],
+        82: ["⛈️", "Pancadas fortes"],
+        85: ["🌨️", "Pancadas de neve fracas"],
+        86: ["❄️", "Pancadas de neve fortes"],
+        95: ["⛈️", "Trovoada"],
+        96: ["⛈️", "Trovoada com granizo fraco"],
+        99: ["⛈️", "Trovoada com granizo forte"]
+      };
+      return descricoes[codigo] || ["🌡️", "Condição variável"];
+    }
+
+    function preencherPrevisaoSemanal(dados) {
+      const container = document.getElementById("weekForecastContainer");
+      container.innerHTML = "";
+      container.scrollLeft = 0;
+
+      dados.time.forEach((dia, indice) => {
+        const dataLocal = new Date(`${dia}T12:00:00`);
+        const nomeDia = indice === 0
+          ? "Hoje"
+          : dataLocal.toLocaleDateString("pt-BR", { weekday: "short" });
+        const dataFormatada = dataLocal.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+        const [icone, descricao] = descreverTempo(dados.weather_code[indice]);
+        const chuva = dados.precipitation_probability_max[indice];
+        const vento = dados.wind_speed_10m_max[indice];
+
+        const card = document.createElement("div");
+        card.className = "forecast-card week-card";
+
+        const diaEl = document.createElement("h3");
+        diaEl.textContent = nomeDia;
+        const dataEl = document.createElement("p");
+        dataEl.textContent = dataFormatada;
+        const iconeEl = document.createElement("div");
+        iconeEl.className = "week-icon";
+        iconeEl.textContent = icone;
+        const descricaoEl = document.createElement("p");
+        descricaoEl.textContent = descricao;
+        const temperaturaEl = document.createElement("p");
+        temperaturaEl.className = "week-temperatures";
+        temperaturaEl.textContent = `${Math.round(dados.temperature_2m_max[indice])}° / ${Math.round(dados.temperature_2m_min[indice])}°C`;
+        const chuvaEl = document.createElement("p");
+        chuvaEl.textContent = `🌧️ Chuva: ${chuva == null ? "--" : `${chuva}%`}`;
+        const ventoEl = document.createElement("p");
+        ventoEl.textContent = `💨 Vento máx.: ${vento == null ? "--" : `${Math.round(vento)} km/h`}`;
+
+        card.append(diaEl, dataEl, iconeEl, descricaoEl, temperaturaEl, chuvaEl, ventoEl);
+        container.appendChild(card);
+      });
+      configurarCarrossel(container, "weekPrev", "weekNext", "weekPosition", "dias");
+    }
+
+    carregarEstados();
+  </script>
+</body>
+
+</html>
